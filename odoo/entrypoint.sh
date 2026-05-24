@@ -369,7 +369,14 @@ install_python_requirements() {
             found_python_modules=$((found_python_modules + 1))
         fi
     done
-
+    
+    if [ "$found_python_modules" -eq 0 ]; then
+        echo "[entrypoint]   ℹ️ No se encontró ningún requirements-python-modules.txt."
+    else
+        echo "[entrypoint] ✅ Módulos Odoo vía PIP instalados (${found_python_modules} ficheros procesados)."
+        echo "[entrypoint]    Ubicación: ${ODOO_PYTHON_PACKAGES}"
+        echo "[entrypoint]    PYTHONPATH: ${PYTHONPATH}"
+    fi
 }
 
 # ============================================================
