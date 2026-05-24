@@ -98,6 +98,7 @@ services:
     ports:
       - "${ODOO_SSH_PORT}:22"
       - "${ODOO_PORT}:8069"
+      - "6789:6789"  # debugpy
 
     # permito tener el contenedor vivo. Al eliminar el punto de entrada una vez arranca se para
     # con tty: true puedo entrar y trabajar sobre él.
@@ -313,20 +314,29 @@ services:
   ## RABBITMQ #################
   #############################
   rabbitmq:
-    build:
-      context: ./rabbitmq
-  
+    image: rabbitmq:3-management-alpine
+    
+    restart: unless-stopped
+
     ports:
-      - "${RABBITMQ_PORT}:5672"         # Puerto de comunicación (AMQP)
-      - "${RABBITMQ_WEB_PORT}:15672"    # Interfaz Web de administración
+      - "${RABBITMQ_PORT:-5672}:5672"         # Puerto de comunicación (AMQP)
+      - "${RABBITMQ_WEB_PORT:-15672}:15672"    # Interfaz Web de administración
 
     environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASSWORD}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASSWORD:-admin}
+      - RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq.conf
 
     volumes:
-      - ./rabbitmq/init-rabbit.sh:/init-rabbit.sh
-      - ./rabbitmq/definitions:/definitions
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
     # Misma red que traefik
     networks:
@@ -336,6 +346,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.local`)"
+      - "traefik.http.routers.rabbitmq.entrypoints=web"
       - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
 
   #############################
