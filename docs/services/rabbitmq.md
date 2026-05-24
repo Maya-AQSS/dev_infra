@@ -26,23 +26,8 @@ Agente de mensajes (message broker) de código abierto, distribuido y de alto re
 
 ### Creación de colas
 
-La creación de vhost,exchanges y colas se puede realizar desde el script _/rabbitmq/init-rabbit.sh_.
+La creación de vhost, exchanges, usuarios, permisos, politicas y colas se puede realizar utilzando el fichero `definitions.json`. La forma más seniclla de crearlo es exportarlo desde la propia consoal de gestión de Rabbit 
 
-La definición de los elementos a creaer se realiza desde la carpeta _/rabbitmq/definitions_, creando un fichero en formato _yml_ para cada infraestrutura de colas que se desee. _/rabbitmq/init-rabbit.sh_ leerá todos los los ficheros que existan en la carpeta.
-
-> Debezium, crea su propio fichero de definiciones a través del fichero _debezium/debezium_generate.py_. Ver la [documentación de Debezium](/odoodock/services/debezium) para más información.
-
-Cada fichero puede definir vhost, users, queues, exchanges y bindings.
-
-El script se lanza el terminal del contenedor (no es neceasario reiniciarlo ni reconstruirlo).
-
-```bash
-# desde el contenedor
-# admin admin es el usuario y contraseña del usuario que 
-docker exec odoodock-rabbitmq-1 bash /init-rabbit.sh admin admin
-``` 
 
 > IMPORTANTE: el usuario debe tener permisos para crear colas en un _Virtual Host_ específico. No por ser administrador es posible crear colas en un _Virtual Host_ si no se ha espcificado explícitamente.
-
-> IMPORTANTE: Las colas se eliminan cada vez que apagamos los contenedores (_docker compose down_), por lo que es necesario ejecutar el script de creación (_init-rabbit.sh_) de colas cada vez que arranquemos (_up.sh_)
 
