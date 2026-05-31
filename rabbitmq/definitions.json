@@ -1,38 +1,125 @@
 {
-  "rabbit_version": "3.13.0",
-  "rabbitmq_version": "3.13.0",
-  "product_name": "RabbitMQ",
-  "product_version": "3.13.0",
+  "rabbit_version":"3.13.7",
+  "rabbitmq_version":"3.13.7",
+  "product_name":"RabbitMQ",
+  "product_version":"3.13.7",
 
   "users": [
     {
       "name": "admin",
-      "password_hash": "kI3GCmuz7tp9wJQo4CwKdfoH8j4jGNyVlii5XN/a7VRhnWh5",
+      "password": "admin",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": ["administrator"],
       "limits": {}
+    },
+    {
+      "name":"n8n",
+      "password": "secret",
+      "hashing_algorithm":"rabbit_password_hashing_sha256",
+      "tags": ["management"],
+      "limits":{}
+    },
+    {
+      "name":"user_worker",
+      "password": "secret",
+      "hashing_algorithm":"rabbit_password_hashing_sha256",
+      "tags":["management"],
+      "limits":{}
+    },
+    {
+      "name":"keycloak",
+      "password": "secret",
+      "hashing_algorithm":"rabbit_password_hashing_sha256",
+      "tags":["management"],
+      "limits":{}
     }
   ],
   "vhosts": [
-    { "name": "/" }
-  ],
-  "permissions": [
     {
-      "user": "admin",
+      "name":"/",
+      "description":"Default virtual host",
+      "tags":[],
+      "metadata":
+        {
+           "description":"Default virtual host",
+           "tags":[]
+        }
+      }
+  ],
+  "permissions":[
+    {"user":"admin","vhost":"/","configure":".*","write":".*","read":".*"},
+    {"user":"user_worker","vhost":"/","configure":"^keycloak\\.ingest($|\\.failed$)","write":"^$","read":"^keycloak\\.ingest($|\\.failed$)"},
+    {"user":"keycloak","vhost":"/","configure":"^maya\\.keycloak$","write":"^maya\\.keycloak$","read":"^$"},
+    {"user":"n8n","vhost":"/","configure":".*","write":".*","read":".*"}
+  ],
+  "topic_permissions":[],
+  "parameters":[],
+  "global_parameters": [],
+  "policies":[
+    {
       "vhost": "/",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
+      "name": "maya-dlx-policy",
+      "pattern": "^(keycloak|logs|notifications|alerts)\\.",
+      "apply-to": "queues",
+      "priority": 10,
+      "definition": {
+        "dead-letter-exchange": "maya.dlx",
+        "message-ttl": 604800000,
+        "max-length": 100000,
+        "overflow": "drop-head"
+      }
     }
   ],
-  "topic_permissions": [],
-  "parameters": [],
-  "global_parameters": [],
-  "policies": [],
 
   "queues": [
     {
       "name": "logs.ingest",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "notifications.ingest",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "notifications.email",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {  
+      "name": "notifications.internal.email",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "alerts.ingest",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "alerts.dispatch",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "keycloak.ingest",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
@@ -46,12 +133,54 @@
       "durable": true,
       "auto_delete": false,
       "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "dlq.notifications.ingest",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "dlq.notifications.email",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {  
+      "name": "dlq.notifications.internal.email",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "dlq.alerts.ingest",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "dlq.alerts.dispatch",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
+    },
+    {
+      "name": "dlq.keycloak.ingest",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": { "x-queue-type": "classic" }
     }
   ],
 
   "exchanges": [
     {
-      "name": "logs",
+      "name": "maya.logs",
       "vhost": "/",
       "type": "topic",
       "durable": true,
@@ -60,7 +189,34 @@
       "arguments": {}
     },
     {
-      "name": "dlx",
+      "name": "maya.notifications",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "maya.alerts",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "maya.keycloak",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "maya.dlx",
       "vhost": "/",
       "type": "direct",
       "durable": true,
@@ -72,19 +228,100 @@
 
   "bindings": [
     {
-      "source": "logs",
+      "source": "maya.logs",
       "vhost": "/",
       "destination": "logs.ingest",
       "destination_type": "queue",
       "routing_key": "*.*",
       "arguments": {}
     },
+
     {
-      "source": "dlx",
+      "source": "maya.notifications",
+      "vhost": "/",
+      "destination": "notifications.ingest",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "maya.notifications",
+      "vhost": "/",
+      "destination": "notifications.email",
+      "destination_type": "queue",
+      "routing_key": "#.email",
+      "arguments": {}
+    },
+    {
+      "source": "maya.alerts",
+      "vhost": "/",
+      "destination": "alerts.ingest",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "maya.alerts",
+      "vhost": "/",
+      "destination": "alerts.dispatch",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source":"maya.keycloak",
+      "vhost":"/",
+      "destination":"keycloak.ingest",
+      "destination_type": "queue",
+      "routing_key":"#",
+      "arguments":{}
+    },
+    {
+      "source": "maya.dlx",
       "vhost": "/",
       "destination": "dlq.logs.ingest",
       "destination_type": "queue",
       "routing_key": "logs.ingest",
+      "arguments": {}
+    },
+    {
+      "source": "maya.dlx",
+      "vhost": "/",
+      "destination": "dlq.notifications.ingest",
+      "destination_type": "queue",
+      "routing_key": "notifications.ingest",
+      "arguments": {}
+    },
+    {
+      "source": "maya.dlx",
+      "vhost": "/",
+      "destination": "dlq.notifications.email",
+      "destination_type": "queue",
+      "routing_key": "notifications.email",
+      "arguments": {}
+    },
+    {
+      "source": "maya.dlx",
+      "vhost": "/",
+      "destination": "dlq.alerts.ingest",
+      "destination_type": "queue",
+      "routing_key": "alerts.ingest",
+      "arguments": {}
+    },
+    {
+      "source": "maya.dlx",
+      "vhost": "/",
+      "destination": "dlq.alerts.dispatch",
+      "destination_type": "queue",
+      "routing_key": "alerts.dispatch",
+      "arguments": {}
+    },
+    {
+      "source": "maya.dlx",
+      "vhost": "/",
+      "destination": "dlq.keycloak.ingest",
+      "destination_type": "queue",
+      "routing_key": "keycloak.ingest",
       "arguments": {}
     }
   ]
