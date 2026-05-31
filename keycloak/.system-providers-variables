@@ -1,9 +1,3 @@
-
-##########################################################
-# CÓDIGO GENERADO AUTOMÁTICAMENTE - NO EDITAR MANUALMENTE
-# Basado en .system-providers-variables
-##########################################################
-
 # WEBHOOK AMQP
 
 WEBHOOK_AMQP_HOST=rabbitmq
